@@ -1,9 +1,10 @@
 import { useState, Component, useEffect } from 'react';
-import { Button, Col, Row, Space, Table, Modal, Form, Input, Select, DatePicker, message, UploadFile } from 'antd';
+import { Button, Col, Row, Space, Table, Modal, Form, Input, Select, DatePicker, message, Upload } from 'antd';
 import axios from 'axios';
 import './App.css';
 import Column from 'antd/es/table/Column';
 import ColumnGroup from 'antd/es/table/ColumnGroup';
+import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
 import { useForm } from "react-hook-form"
 
 
@@ -16,7 +17,7 @@ function App() {
   } = useForm();
 
   const [employees, setEmployees] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { Option } = Select;
   const { TextArea } = Input;
 
@@ -32,11 +33,12 @@ function App() {
     photo: "",
     salary: "",
     address: "",
-    countryId: "",
-    stateId: "",
-    cityId: "",
+    country: "",
+    state: "",
+    city: "",
     zipCode: "",
     password: "",
+    created: "",
   });
 
   useEffect(() => {
@@ -58,44 +60,81 @@ function App() {
 
   //Form Method:
   const showModal = () => {
-    setIsModalVisible(true);
+    setIsModalOpen(true);
   };
 
   const handleCancel = () => {
-    setIsModalVisible(false)
+    setIsModalOpen(false)
   };
 
   //Post: Employees
   const handleCreate = () => {
     try {
 
-      axios.post(baseUrl + "/AddEmployee", { newItem });
-      setNewItem({
-        id: "",
-        firstName: "",
-        lastName: "",
-        email: "",
-        gender: "",
-        maritalStatus: "",
-        birthDate: "",
-        hobbies: "",
-        photo: "",
-        salary: "",
-        address: "",
-        countryId: "",
-        stateId: "",
-        cityId: "",
-        zipCode: "",
-        password: "",
+      const formData = new FormData();
+      const formValues = form.getFieldsValue();
+
+      console.log("formValues: ", formValues);
+
+      Object.entries(formValues).forEach(([key, value]) => {
+        // formData.append(key, value);
+        formData.append("id", 0);
+        formData.append("firstName", form.getFieldValue("FirstName"));
+        formData.append("lastName", form.getFieldValue("LastName"));
+        formData.append("email", form.getFieldValue("Email"));
+        formData.append("gender", form.getFieldValue("Gender"));
+        formData.append("maritalStatus", form.getFieldValue("MaritalStatus"));
+        formData.append("birthDate", form.getFieldValue("BirthDate"));
+        formData.append("hobbies", form.getFieldValue("Hobbies"));
+        formData.append("photo", form.getFieldValue("Photo"));
+        formData.append("salary", form.getFieldValue("Salary"));
+        formData.append("address", form.getFieldValue("Address"));
+        formData.append("countryId", form.getFieldValue("Country"));
+        formData.append("stateId", form.getFieldValue("State"));
+        formData.append("cityId", form.getFieldValue("City"));
+        formData.append("zipCode", form.getFieldValue("ZipCode"));
+        formData.append("password", form.getFieldValue("Password"));
+        formData.append("created", null);
       });
 
-      setIsModalVisible(false);
+      console.log("formData: " + formData);
+      axios.post(baseUrl + "/AddEmployee", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Important: Set the content type to form data
+        }
+      }).then((response) => {
+        console.log(response.data);
+      }).catch((error) => console.log(error));
+
+      // setNewItem({
+      //   id: "",
+      //   firstName: "",
+      //   lastName: "",
+      //   email: "",
+      //   gender: "",
+      //   maritalStatus: "",
+      //   birthDate: "",
+      //   hobbies: "",
+      //   photo: "",
+      //   salary: "",
+      //   address: "",
+      //   countryId: "",
+      //   stateId: "",
+      //   cityId: "",
+      //   zipCode: "",
+      //   password: "",
+      // });
+
+      setIsModalOpen(false);
       getAllEmployees();
+      console.log("handleCreate method called")
 
     } catch (error) {
-      alert(error);
+      alert("handleCreate: " + error);
     }
   };
+
+
   const [form] = Form.useForm();
   const onGenderChange = (value) => {
     switch (value) {
@@ -118,6 +157,27 @@ function App() {
     }
   };
 
+  //photo upload
+  const props = {
+    name: 'file',
+    action: 'https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188',
+    headers: {
+      authorization: 'authorization-text',
+    },
+    onChange(info) {
+      console.log("FileUpload Info: " + info);
+      if (info.file.status !== 'uploading') {
+        console.log(info.file, info.fileList);
+      }
+      if (info.file.status === 'done') {
+        message.success(`${info.file.name} file uploaded successfully`);
+      } else if (info.file.status === 'error') {
+        message.error(`${info.file.name} file upload failed.`);
+      }
+    },
+  };
+
+  /* return */
   return (
     <div className="App">
       <h1>Employee</h1>
@@ -125,7 +185,7 @@ function App() {
       <div>
         <div style={{ alignitem: "left" }}>
 
-          <Button type="primary" color="green" onClick={showModal}>
+          <Button type="primary" onClick={showModal} icon={<PlusOutlined />}>
             Add Employee
           </Button>
 
@@ -133,23 +193,27 @@ function App() {
 
         <Modal
           title="Add New Item"
-          visible={isModalVisible}
-          onOk={handleCancel}
+          open={isModalOpen}
+          onOk={handleCreate}
           onCancle={handleCancel}
         >
           <Form onFinish={handleCreate} form={form}>
-
             <Form.Item
-              name={"FirstName"} label={"FirstName"} rules={[{ required: true, message: "Please Enter FirstName!" }]}>
-              <Input {...register("firstName", { required: true, maxLength: 20 })} />
+              name={"ZipCode"} label={"ZipCode"} >
+              <Input {...register("zipcode")} />
             </Form.Item>
             <Form.Item
-              name={"LastName"} label={"LastName"} rules={[{ required: true, message: "Please Enter LastName!" }]}> <Input /> </Form.Item>
+              name={"FirstName"} label={"FirstName"} >
+              <Input {...register("FirstName")} /> </Form.Item>
+            {/* <Form.Item
+              name={"LastName"} label={"LastName"} >
+              <Input {...register("lastName")} /> </Form.Item>
             <Form.Item
-              name={"Email"} label={"Email"} rules={[{ required: true, message: "Please Enter Email" }]}> <Input /> </Form.Item>
+              name={"Email"} label={"Email"}>
+              <Input {...register("email")} /> </Form.Item>
             <Form.Item
-              name={"Gender"} label={"Gender"} rules={[{ required: true, message: "Please Enter Gender" }]}>
-              <Select {...register("gender", { required: true, maxLength: 1 })}
+              name={"Gender"} label={"Gender"} >
+              <Select {...register("gender")}
                 placeholder="--Select--"
                 onChange={onGenderChange}
                 allowClear
@@ -159,20 +223,26 @@ function App() {
               </Select>
             </Form.Item>
             <Form.Item
-              name={"Birthday"} label={"Birthday"} rules={[{ required: true, message: "Please Enter Birthday" }]}> <DatePicker /> </Form.Item>
+              name={"Birthday"} label={"Birthday"} >
+              <DatePicker {...register("Birthday")} /> </Form.Item>
             <Form.Item
-              name={"Hobbies"} label={"Hobbies"} rules={[{ required: false, message: "Please Enter Hobbies" }]}> <Input /> </Form.Item>
+              name={"Hobbies"} label={"Hobbies"} >
+              <Input  {...register("hobbies")} /> </Form.Item>
             <Form.Item
-              name={"Photo"} label={"Photo"} rules={[{ required: false, message: "Please Enter Photo" }]}> <Input /> </Form.Item>
-            <Form.Item
-              name={"Salary"} label={"Salary"} rules={[{ required: false, message: "Please Enter Salary" }]}> <Input /> </Form.Item>
-            <Form.Item
-              name={"Address"} label={"Address"} rules={[{ required: false, message: "Please Enter Address" }]}>
-              <TextArea rows={4} />
+              name={"Photo"} label={"Photo"} >
+              <Upload {...props} {...register("Photo")}>
+                <Button icon={<UploadOutlined />} >Click to Upload</Button>
+              </Upload>
             </Form.Item>
             <Form.Item
-              name={"Country"} label={"Country"} rules={[{ required: false, message: "Please Enter Country" }]}>
-              <Select
+              name={"Salary"} label={"Salary"} > <Input {...register("salary")} /> </Form.Item>
+            <Form.Item
+              name={"Address"} label={"Address"} >
+              <TextArea rows={4}  {...register("address")} />
+            </Form.Item>
+            <Form.Item
+              name={"Country"} label={"Country"} >
+              <Select  {...register("country")}
                 placeholder="--Select--"
                 // onChange={onGenderChange}
                 allowClear
@@ -182,8 +252,8 @@ function App() {
               </Select>
             </Form.Item>
             <Form.Item
-              name={"State"} label={"State"} rules={[{ required: false, message: "Please Enter State" }]}>
-              <Select
+              name={"State"} label={"State"} >
+              <Select  {...register("state")}
                 placeholder="--Select--"
                 // onChange={onGenderChange}
                 allowClear
@@ -193,8 +263,8 @@ function App() {
               </Select>
             </Form.Item>
             <Form.Item
-              name={"City"} label={"City"} rules={[{ required: false, message: "Please Enter City" }]}>
-              <Select
+              name={"City"} label={"City"} >
+              <Select {...register("city")}
                 placeholder="--Select--"
                 // onChange={onGenderChange}
                 allowClear
@@ -204,9 +274,9 @@ function App() {
               </Select>
             </Form.Item>
             <Form.Item
-              name={"ZipCode"} label={"ZipCode"} rules={[{ required: false, message: "Please Enter ZipCode" }]}>
-              <Input {...register("zipcode", { required: false, maxLength: 6 })} />
-            </Form.Item>
+              name={"ZipCode"} label={"ZipCode"} >
+              <Input {...register("zipcode")} />
+            </Form.Item> */}
 
 
             {/* <Button htmlType="submit">Add</Button> */}
